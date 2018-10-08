@@ -87,12 +87,32 @@ def separable_conv(x, w1, w2, padding, data_format):
     return conv(x2, w2, padding=padding, data_format=data_format)
 
 
+def conv_transpose(x, w, output_shape, padding, data_format, dilation_rate=1):
+    if x.ndim == 4:
+        w = np.fliplr(np.flipud(w))
+        w = np.transpose(w, (0, 1, 3, 2))
+    else:
+        w = np.flip(np.fliplr(np.flipud(w)), axis=2)
+        w = np.transpose(w, (0, 1, 2, 4, 3))
+
+    if isinstance(dilation_rate, int):
+        dilation_rate = (dilation_rate,) * (x.ndim - 2)
+    for (i, d) in enumerate(dilation_rate):
+        if d > 1:
+            for j in range(w.shape[i] - 1):
+                w = np.insert(w, 2 * j + 1, 0, axis=i)
+
+    return conv(x, w, padding=padding, data_format=data_format)
+
+
 conv1d = conv
 conv2d = conv
 conv3d = conv
 depthwise_conv2d = depthwise_conv
 separable_conv1d = separable_conv
 separable_conv2d = separable_conv
+conv2d_transpose = conv_transpose
+conv3d_transpose = conv_transpose
 
 
 def pool(x, pool_size, strides, padding, data_format, pool_mode):
@@ -450,10 +470,6 @@ def print_tensor(x, message=''):
     return x
 
 
-def eye(size, dtype=None, name=None):
-    return np.eye(size, dtype=dtype)
-
-
 def dot(x, y):
     return np.dot(x, y)
 
@@ -509,12 +525,36 @@ def minimum(x, y):
     return np.minimum(x, y)
 
 
+def ndim(x):
+    return x.ndim
+
+
 def random_uniform_variable(shape, low, high, dtype=None, name=None, seed=None):
     return (high - low) * np.random.random(shape).astype(dtype) + low
 
 
 def random_normal_variable(shape, mean, scale, dtype=None, name=None, seed=None):
     return scale * np.random.randn(*shape).astype(dtype) + mean
+
+
+def zeros(shape, dtype=floatx(), name=None):
+    return np.zeros(shape, dtype=dtype)
+
+
+def zeros_like(x, dtype=floatx(), name=None):
+    return np.zeros_like(x, dtype=dtype)
+
+
+def ones(shape, dtype=floatx(), name=None):
+    return np.ones(shape, dtype=dtype)
+
+
+def ones_like(x, dtype=floatx(), name=None):
+    return np.ones_like(x, dtype=dtype)
+
+
+def eye(size, dtype=None, name=None):
+    return np.eye(size, dtype=dtype)
 
 
 def resize_images(x, height_factor, width_factor, data_format):
